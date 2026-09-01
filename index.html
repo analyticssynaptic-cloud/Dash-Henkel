@@ -1,0 +1,606 @@
+<meta charset="UTF-8">
+<title>Henkel GLISS BI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+    --page:#fdfbfa; --surface:#ffffff; --surface-2:#faf5f4; --surface-3:#f5eeec;
+    --ink:#18110f; --ink-2:#5c5250; --muted:#948985; --grid:#ece4e1; --baseline:#d9cdc9;
+    --border:rgba(24,17,15,.09); --border-strong:rgba(24,17,15,.14);
+    --brand:#e1000f; --brand-600:#a80000; --brand-soft:#fdeaea; --brand-ink:#ffffff;
+    --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a; --series-4:#eda100; --series-5:#e87ba4; --series-6:#4a3aa7;
+    --seq-100:#cde2fb; --seq-250:#86b6ef; --seq-350:#5598e7; --seq-450:#2a78d6; --seq-550:#1c5cab;
+    --status-good:#0ca30c; --status-warning:#fab219; --status-serious:#ec835a; --status-critical:#d03b3b;
+    --status-good-soft:#e6f6e6; --status-warning-soft:#fef3de; --status-critical-soft:#fbe6e6;
+    --shadow-card:0 1px 2px rgba(24,17,15,.04), 0 12px 32px -16px rgba(24,17,15,.16);
+    --radius-lg:20px; --radius-md:14px; --radius-sm:9px;
+    --font-display:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,'SF Mono',Consolas,monospace;
+  }
+  /* Identidad fija de marca Henkel: el tablero se mantiene siempre en tonos claros,
+     sin variante oscura, para respetar la identidad visual corporativa. */
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--page);color:var(--ink);font-family:var(--font-display);-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1360px;margin:0 auto;padding:0 28px 64px;}
+  h1,h2,h3{font-family:var(--font-display);margin:0;text-wrap:balance;}
+  .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+
+  /* HEADER */
+  header.top{
+    position:sticky;top:0;z-index:30;background:var(--page)cc;backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+  }
+  .top-inner{max-width:1360px;margin:0 auto;padding:18px 28px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+  .brandmark{display:flex;align-items:center;gap:12px;}
+  .brandmark .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(140deg,#ff5c5c,var(--brand) 60%,var(--brand-600));display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px -6px rgba(225,0,15,.5);flex:0 0 auto;}
+  .brandmark .logo svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+  .brandmark .titles b{display:block;font-size:15.5px;font-weight:800;letter-spacing:-.01em;}
+  .brandmark .titles span{display:block;font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-top:1px;}
+  .top-right{margin-left:auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .period-chips{display:flex;gap:6px;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:4px;}
+  .period-chips button{
+    border:none;background:transparent;color:var(--ink-2);font-family:inherit;font-size:12.5px;font-weight:700;
+    padding:7px 14px;border-radius:999px;cursor:pointer;transition:.15s;
+  }
+  .period-chips button.active{background:var(--brand);color:var(--brand-ink);box-shadow:0 3px 10px -3px rgba(225,0,15,.5);}
+  .sync-note{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);font-weight:600;}
+  .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--status-good);box-shadow:0 0 0 3px var(--status-good-soft);}
+
+  /* KPI STRIP */
+  .kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:26px 0 8px;}
+  .kpi{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);
+    padding:16px 16px 14px;box-shadow:var(--shadow-card);display:flex;flex-direction:column;gap:9px;min-width:0;
+  }
+  .kpi .kpi-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+  .kpi .kpi-value{font-size:25px;font-weight:700;line-height:1;letter-spacing:-.01em;}
+  .kpi .kpi-sub{font-size:11px;color:var(--ink-2);font-weight:600;}
+  .kpi .kpi-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px;}
+  .delta{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:800;padding:2px 7px;border-radius:999px;}
+  .delta.up{color:var(--status-good);background:var(--status-good-soft);}
+  .delta.down{color:var(--status-critical);background:var(--status-critical-soft);}
+  .spark{flex:0 0 auto;}
+
+  /* GRID / CARDS */
+  .grid{display:grid;gap:16px;margin-top:16px;}
+  .grid.cols-5-7{grid-template-columns:5fr 7fr;}
+  .grid.cols-7-5{grid-template-columns:7fr 5fr;}
+  .grid.cols-6-6{grid-template-columns:6fr 6fr;}
+  .grid.cols-8-4{grid-template-columns:8fr 4fr;}
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+    padding:22px 22px 20px;box-shadow:var(--shadow-card);min-width:0;
+  }
+  .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px;}
+  .card-head h3{font-size:14.5px;font-weight:800;letter-spacing:-.005em;}
+  .card-head p{font-size:12px;color:var(--muted);margin-top:3px;font-weight:600;}
+  .card-tag{font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--border);white-space:nowrap;}
+
+  /* legend */
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;}
+  .legend .item{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--ink-2);}
+  .legend .sw{width:9px;height:9px;border-radius:3px;flex:0 0 auto;}
+
+  /* horizontal bars (ranked list) */
+  .hbars{display:flex;flex-direction:column;gap:12px;}
+  .hbar-row{display:grid;grid-template-columns:126px 1fr 56px;gap:10px;align-items:center;}
+  .hbar-row .hb-label{font-size:12px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .hbar-row .hb-track{position:relative;height:11px;background:var(--surface-3);border-radius:6px;overflow:hidden;}
+  .hbar-row .hb-fill{position:absolute;left:0;top:0;bottom:0;border-radius:6px;}
+  .hbar-row .hb-val{font-size:12px;font-weight:700;text-align:right;}
+
+  /* status pill */
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;}
+  .pill.good{color:var(--status-good);background:var(--status-good-soft);}
+  .pill.warning{color:#8a5a0d;background:var(--status-warning-soft);}
+  .pill.critical{color:var(--status-critical);background:var(--status-critical-soft);}
+  .pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+  /* gauge / meter */
+  .meter-wrap{display:flex;align-items:center;gap:18px;}
+  .meter-figures{display:flex;flex-direction:column;gap:2px;}
+  .meter-figures .mv{font-size:32px;font-weight:700;line-height:1;}
+  .meter-figures .ml{font-size:11.5px;color:var(--muted);font-weight:700;}
+
+  /* callout */
+  .callout{display:flex;gap:10px;align-items:flex-start;padding:12px 13px;border-radius:var(--radius-sm);margin-top:14px;font-size:12px;line-height:1.45;}
+  .callout.critical{background:var(--status-critical-soft);color:var(--status-critical);}
+  .callout b{color:inherit;}
+  .callout svg{width:16px;height:16px;flex:0 0 auto;margin-top:1px;}
+
+  /* chip list */
+  .chiplist{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;}
+  .chiplist .chip{font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);color:var(--ink-2);}
+
+  /* table */
+  .table-scroll{overflow-x:auto;}
+  table.data{width:100%;border-collapse:collapse;font-size:12.5px;min-width:640px;}
+  table.data th{
+    text-align:left;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+    padding:0 10px 10px;border-bottom:1px solid var(--border-strong);white-space:nowrap;
+  }
+  table.data td{padding:12px 10px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap;}
+  table.data tr:last-child td{border-bottom:none;}
+  table.data td.num, table.data th.num{text-align:right;font-family:var(--font-mono);}
+  .advisor{display:flex;align-items:center;gap:9px;}
+  .advisor .av{width:26px;height:26px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;flex:0 0 auto;}
+  .mini-bar{width:64px;height:6px;border-radius:4px;background:var(--surface-3);overflow:hidden;display:inline-block;vertical-align:middle;margin-left:8px;}
+  .mini-bar > span{display:block;height:100%;border-radius:4px;}
+
+  /* voz sub-grid */
+  .voz-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:4px;}
+  .voz-sub{padding-top:16px;border-top:1px solid var(--border);}
+  .voz-sub:first-child{padding-top:0;border-top:none;}
+  .voz-sub h4{font-size:12px;font-weight:800;color:var(--ink-2);margin-bottom:12px;}
+  .stack-bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--surface-3);}
+  .stack-bar > span{height:100%;}
+  .agegrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+  .agecell{text-align:center;}
+  .agecell .ab{height:44px;border-radius:5px 5px 2px 2px;background:var(--seq-450);display:flex;align-items:flex-end;justify-content:center;margin-bottom:5px;}
+  .agecell .al{font-size:9.5px;color:var(--muted);font-weight:700;}
+  .agecell .av2{font-size:10px;color:#fff;font-weight:800;padding-bottom:3px;}
+
+  footer.note{margin-top:30px;padding-top:18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);font-weight:600;}
+
+  @media (max-width:1100px){
+    .kpi-grid{grid-template-columns:repeat(3,1fr);}
+    .grid.cols-5-7,.grid.cols-7-5,.grid.cols-6-6,.grid.cols-8-4{grid-template-columns:1fr;}
+    .voz-grid{grid-template-columns:1fr;}
+  }
+  @media (max-width:640px){
+    .kpi-grid{grid-template-columns:repeat(2,1fr);}
+    .wrap{padding:0 16px 48px;}
+    .top-inner{padding:14px 16px;}
+  }
+</style>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brandmark">
+      <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 2s7 8.5 7 13a7 7 0 0 1-14 0c0-4.5 7-13 7-13Z"/></svg></div>
+      <div class="titles"><b>Henkel GLISS</b><span>BI · Ejecución en punto de venta</span></div>
+    </div>
+    <div class="top-right">
+      <div class="sync-note"><span class="sync-dot"></span>Actualizado hoy, 8:14 a.m.</div>
+      <div class="period-chips" id="periodChips">
+        <button data-p="semana" class="active">Semana</button>
+        <button data-p="mes">Mes</button>
+        <button data-p="trimestre">Trimestre</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="grid cols-5-7">
+    <div class="card">
+      <div class="card-head">
+        <div><h3>Cobertura por ciudad</h3><p>PDV visitados / asignados</p></div>
+        <span class="card-tag" id="coberturaTotalTag">233 / 277</span>
+      </div>
+      <div id="coberturaChart" class="hbars"></div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--status-good)"></span>≥ 85%</div>
+        <div class="item"><span class="sw" style="background:var(--status-warning)"></span>70–84%</div>
+        <div class="item"><span class="sw" style="background:var(--status-critical)"></span>&lt; 70%</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div><h3>Ventas por categoría</h3><p>Unidades vendidas en el periodo</p></div>
+        <span class="card-tag">18,460 uds</span>
+      </div>
+      <svg id="ventasChart" width="100%" height="220" style="overflow:visible"></svg>
+    </div>
+  </div>
+
+  <div class="grid cols-6-6">
+    <div class="card">
+      <div class="card-head">
+        <div><h3>Top marcas vendidas</h3><p>Unidades, todas las categorías</p></div>
+      </div>
+      <div id="marcasChart" class="hbars"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div><h3>Catálogo utilizado en la venta</h3><p>Estándar (11 SKU) vs. Pro (catálogo completo)</p></div>
+      </div>
+      <div class="meter-wrap">
+        <svg id="catalogoDonut" width="132" height="132" viewBox="0 0 132 132"></svg>
+        <div class="legend" style="flex-direction:column;gap:10px;margin-top:0">
+          <div class="item"><span class="sw" style="background:var(--series-2)"></span>Catálogo Pro — 61%</div>
+          <div class="item"><span class="sw" style="background:var(--series-1)"></span>Estándar — 39%</div>
+        </div>
+      </div>
+      <p style="font-size:11.5px;color:var(--muted);margin-top:14px;font-weight:600;">Los asesores especiales concentran la mayoría del volumen al vender contra el catálogo completo (SKU Pro).</p>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr;margin-top:16px">
+    <div class="card">
+      <div class="card-head">
+        <div><h3>Voz del Consumidor</h3><p>512 consumidores encuestados en el periodo</p></div>
+        <span class="card-tag">+58 vs. semana anterior</span>
+      </div>
+      <div class="voz-grid">
+        <div class="voz-sub">
+          <h4>¿Conocía la marca GLISS?</h4>
+          <div class="meter-wrap">
+            <svg id="conoceDonut" width="104" height="104" viewBox="0 0 104 104"></svg>
+            <div>
+              <div class="meter-figures"><span class="mv num">68%</span><span class="ml">la conocía antes de la visita</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="voz-sub">
+          <h4>Opinión promedio sobre los productos</h4>
+          <div class="meter-wrap">
+            <svg id="opinionGauge" width="104" height="104" viewBox="0 0 104 104"></svg>
+            <div class="meter-figures"><span class="mv num">4.2<span style="font-size:16px;color:var(--muted)">/5</span></span><span class="ml">escala de percepción del producto</span></div>
+          </div>
+        </div>
+        <div class="voz-sub">
+          <h4>Percepción al probar/ver en el punto</h4>
+          <div class="stack-bar" id="percepcionStack"></div>
+          <div class="legend" id="percepcionLegend"></div>
+        </div>
+        <div class="voz-sub">
+          <h4>Rango de edad de los encuestados</h4>
+          <div class="agegrid" id="edadGrid"></div>
+        </div>
+        <div class="voz-sub">
+          <h4>Tipo de producto que más usa</h4>
+          <div id="tipoProductoChart" class="hbars"></div>
+        </div>
+        <div class="voz-sub">
+          <h4>Atributos que le gustaría ver</h4>
+          <div id="atributosChart" class="hbars"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid cols-7-5">
+    <div class="card">
+      <div class="card-head">
+        <div><h3>Control de inventario de premios</h3><p>Recibidos en el periodo vs. conteo físico actual</p></div>
+      </div>
+      <svg id="premiosChart" width="100%" height="260" style="overflow:visible"></svg>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--series-1)"></span>Recibidos</div>
+        <div class="item"><span class="sw" style="background:var(--series-2)"></span>Inventario actual</div>
+      </div>
+      <div class="callout critical">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span><b>STICKER OBSEQUIO 2020</b> está casi agotado: quedan 12 de 640 unidades recibidas (1.9%). Se recomienda reposición inmediata.</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div><h3>Actividad de la competencia</h3><p>63 PDV con actividad detectada (22.6%)</p></div>
+      </div>
+      <div id="competenciaChart" class="hbars"></div>
+      <div style="margin-top:14px">
+        <h4 style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Marcas más observadas</h4>
+        <div class="chiplist">
+          <span class="chip">L'Oréal Paris</span><span class="chip">Pantene</span><span class="chip">Sedal</span><span class="chip">Head &amp; Shoulders</span><span class="chip">TRESemmé</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr;margin-top:16px">
+    <div class="card">
+      <div class="card-head">
+        <div><h3>Cumplimiento Golden Rules por asesor</h3><p>Cobertura de ruta y evidencia fotográfica obligatoria</p></div>
+      </div>
+      <div class="table-scroll">
+        <table class="data" id="asesoresTable">
+          <thead>
+            <tr>
+              <th>Asesor</th><th class="num">PDV asig.</th><th class="num">Visitados</th><th>Cobertura</th><th>Fotos completas</th><th class="num">Ventas (uds)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer class="note">
+    <span>Datos simulados con fines demostrativos — no reflejan cifras reales de Henkel.</span>
+    <span>Henkel GLISS × Synaptic · BI Fundamentales Canal Directo</span>
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+ * DATOS SIMULADOS — misma estructura que captura Henkel GLISS
+ * (Ingreso/Ventas/Premios/Voz/Redenciones/Competencia/Salida)
+ * ============================================================ */
+const DATA = {
+  kpis: [
+    { label:'Cobertura de visita', value:'84.1%', sub:'233 / 277 PDV', delta:'+6.1 pts', dir:'up', trend:[71,74,73,77,79,81,84.1] },
+    { label:'Ventas totales', value:'18,460', sub:'unidades en el periodo', delta:'+12.4%', dir:'up', trend:[12100,13400,14200,15100,16300,17200,18460] },
+    { label:'Tasa de conversión', value:'76.8%', sub:'visitas con venta', delta:'+3.2 pts', dir:'up', trend:[68,70,71,73,74,75,76.8] },
+    { label:'Consumidores encuestados', value:'512', sub:'Voz del Consumidor', delta:'+58', dir:'up', trend:[340,365,390,410,440,470,512] },
+    { label:'PDV con competencia activa', value:'22.6%', sub:'63 PDV detectados', delta:'-4.1 pts', dir:'down-good', trend:[29,28,27,26,25,23,22.6] },
+    { label:'Cumplimiento fotográfico', value:'96.5%', sub:'Ingreso + Salida', delta:'+1.8 pts', dir:'up', trend:[91,92,93,94,95,96,96.5] }
+  ],
+  cobertura: [
+    { ciudad:'Bogotá', vis:96, tot:102 }, { ciudad:'Medellín', vis:54, tot:61 }, { ciudad:'Ibagué', vis:5, tot:6 },
+    { ciudad:'Cali', vis:38, tot:47 }, { ciudad:'Bucaramanga', vis:18, tot:24 }, { ciudad:'Manizales', vis:8, tot:11 },
+    { ciudad:'Barranquilla', vis:12, tot:19 }, { ciudad:'Otras ciudades', vis:2, tot:7 }
+  ],
+  ventasCategoria: [
+    { k:'HAIR', v:6120 }, { k:'COLOR', v:5340 }, { k:'LAUNDRY', v:3180 }, { k:'DEOS', v:1940 }, { k:'STYLING', v:1240 }, { k:'COMPLEMENTO', v:640 }
+  ],
+  marcas: [
+    { k:'GLISS', v:4380 }, { k:'IGORA', v:3120 }, { k:'PALETTE', v:2860 }, { k:'PERSIL', v:2410 }, { k:'BALANCE', v:1540 }, { k:'GÖT2B', v:980 }
+  ],
+  catalogo: { pro:61, estandar:39 },
+  premios: [
+    { k:'CEPILLO CON CAJA GLISS 2026', recibidos:420, actual:96 },
+    { k:'FUNDA CON CAJA GLISS 2026', recibidos:380, actual:142 },
+    { k:'GORRO CON CAJA GLISS', recibidos:260, actual:58 },
+    { k:'SCRUNCHI BOLSA CELOFÁN GLISS', recibidos:510, actual:203 },
+    { k:'STICKER OBSEQUIO 2020', recibidos:640, actual:12 }
+  ],
+  conoceMarca: 68,
+  opinion: 4.2,
+  percepcion: [
+    { k:'Le encantó', v:41, c:'var(--status-good)' }, { k:'Le gustó', v:37, c:'var(--seq-450)' },
+    { k:'Ni fu ni fa', v:16, c:'var(--status-warning)' }, { k:'No le gustó', v:6, c:'var(--status-critical)' }
+  ],
+  edad: [ { k:'18-25', v:14 }, { k:'26-35', v:31 }, { k:'36-45', v:27 }, { k:'46-55', v:18 }, { k:'56+', v:10 } ],
+  tipoProducto: [
+    { k:'Shampoo', v:34 }, { k:'Acondicionador', v:22 }, { k:'Coloración', v:19 }, { k:'Tratamiento/Mascarilla', v:14 }, { k:'Styling', v:8 }, { k:'Otro', v:3 }
+  ],
+  atributos: [
+    { k:'Mejor precio', v:46 }, { k:'Mayor disponibilidad', v:33 }, { k:'Mejor resultado', v:29 }, { k:'Promociones y combos', v:24 }, { k:'Empaque/presentación', v:15 }
+  ],
+  competencia: [
+    { k:'Descuento / Promoción', v:38 }, { k:'Exhibición especial', v:27 }, { k:'Degustación / Impulso', v:19 }, { k:'Mercaderista en el punto', v:11 }, { k:'Otro', v:5 }
+  ],
+  asesores: [
+    { n:'Laura Gómez', asig:48, vis:46, ventas:3820 },
+    { n:'Camilo Restrepo', asig:52, vis:49, ventas:3510, fotos:98.0 },
+    { n:'Juliana Torres', asig:45, vis:41, ventas:3120, fotos:97.6 },
+    { n:'Andrés Salazar', asig:50, vis:40, ventas:2760, fotos:95.0 },
+    { n:'Valentina Ríos', asig:41, vis:30, ventas:2340, fotos:93.3 },
+    { n:'Santiago Molina', asig:41, vis:27, ventas:2910, fotos:88.9 }
+  ]
+};
+
+const NS = 'http://www.w3.org/2000/svg';
+function svgEl(tag, attrs){ const el=document.createElementNS(NS, tag); for(const k in attrs) el.setAttribute(k, attrs[k]); return el; }
+function fmt(n){ return n.toLocaleString('es-CO'); }
+function tierColor(pct, good, warn){ return pct>=good ? 'var(--status-good)' : pct>=warn ? 'var(--status-warning)' : 'var(--status-critical)'; }
+function tierName(pct, good, warn){ return pct>=good ? 'good' : pct>=warn ? 'warning' : 'critical'; }
+
+/* ---------- KPI strip ---------- */
+function renderKPIs(){
+  const cont=document.getElementById('kpiGrid'); cont.innerHTML='';
+  DATA.kpis.forEach(k=>{
+    const good = k.dir!=='down-good' ? k.delta.startsWith('+') : k.delta.startsWith('-');
+    const arrow = (k.dir==='down-good') ? '↓' : (k.delta.startsWith('+') ? '↑' : '↓');
+    const div=document.createElement('div'); div.className='kpi';
+    div.innerHTML = `
+      <span class="kpi-label">${k.label}</span>
+      <span class="kpi-value num">${k.value}</span>
+      <span class="kpi-sub">${k.sub}</span>
+      <div class="kpi-foot">
+        <span class="delta ${good?'up':'down'}">${arrow} ${k.delta}</span>
+        <svg class="spark" width="64" height="22" viewBox="0 0 64 22"></svg>
+      </div>`;
+    cont.appendChild(div);
+    drawSparkline(div.querySelector('.spark'), k.trend, good);
+  });
+}
+function drawSparkline(svg, values, good){
+  const w=64,h=22,pad=2;
+  const min=Math.min(...values), max=Math.max(...values);
+  const x = i => pad + i*(w-2*pad)/(values.length-1);
+  const y = v => h-pad-( (v-min)/(max-min||1) )*(h-2*pad);
+  const pts = values.map((v,i)=>[x(i),y(v)]);
+  const path = pts.map((p,i)=> (i===0?'M':'L')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const color = good ? 'var(--status-good)' : 'var(--status-critical)';
+  svg.appendChild(svgEl('path',{d:path, fill:'none', stroke:color, 'stroke-width':1.8, 'stroke-linecap':'round','stroke-linejoin':'round'}));
+  const last=pts[pts.length-1];
+  svg.appendChild(svgEl('circle',{cx:last[0],cy:last[1],r:2.4,fill:color}));
+}
+
+/* ---------- Ranked horizontal bars (generic) ---------- */
+function renderHBars(containerId, items, opts){
+  opts = opts||{};
+  const cont=document.getElementById(containerId); cont.innerHTML='';
+  const max = opts.max || Math.max(...items.map(i=>i.v));
+  items.forEach(it=>{
+    const pct = Math.max(2, (it.v/max)*100);
+    const color = opts.colorFn ? opts.colorFn(it) : (opts.color||'var(--series-1)');
+    const valLabel = opts.suffix ? it.v+opts.suffix : fmt(it.v);
+    const row=document.createElement('div'); row.className='hbar-row';
+    row.innerHTML = `<span class="hb-label" title="${it.k}">${it.k}</span>
+      <span class="hb-track"><span class="hb-fill" style="width:${pct}%;background:${color}"></span></span>
+      <span class="hb-val num">${valLabel}</span>`;
+    cont.appendChild(row);
+  });
+}
+
+/* ---------- Vertical column chart (categorical magnitude, single hue) ---------- */
+function renderColumns(svgId, items, opts){
+  opts=opts||{};
+  const svg=document.getElementById(svgId);
+  const w = svg.clientWidth || 560, h=220;
+  svg.setAttribute('viewBox','0 0 '+w+' '+h);
+  svg.innerHTML='';
+  const max = Math.max(...items.map(d=>d.v));
+  const padL=6, padR=6, padT=20, padB=32;
+  const bw = (w-padL-padR)/items.length;
+  const barW = Math.min(40, bw*0.5);
+  const color = opts.color || 'var(--series-1)';
+  // gridline baseline
+  svg.appendChild(svgEl('line',{x1:padL,y1:h-padB,x2:w-padR,y2:h-padB,stroke:'var(--baseline)','stroke-width':1}));
+  items.forEach((d,i)=>{
+    const cx = padL + bw*i + bw/2;
+    const bh = (d.v/max)*(h-padT-padB);
+    const y = h-padB-bh;
+    svg.appendChild(svgEl('rect',{x:cx-barW/2,y:y,width:barW,height:bh,rx:4,fill:color}));
+    const val = svgEl('text',{x:cx,y:y-8,'text-anchor':'middle','font-size':11,'font-weight':700,fill:'var(--ink)','font-family':'var(--font-mono)'});
+    val.textContent = fmt(d.v);
+    svg.appendChild(val);
+    const lbl = svgEl('text',{x:cx,y:h-padB+16,'text-anchor':'middle','font-size':10,'font-weight':700,fill:'var(--muted)'});
+    lbl.textContent = d.k;
+    svg.appendChild(lbl);
+  });
+}
+
+/* ---------- Grouped column chart (2 series) ---------- */
+function renderGroupedColumns(svgId, items, seriesKeys, colors, h){
+  const svg=document.getElementById(svgId);
+  const w = svg.clientWidth || 560; h = h||260;
+  svg.setAttribute('viewBox','0 0 '+w+' '+h);
+  svg.innerHTML='';
+  const max = Math.max(...items.flatMap(d=>seriesKeys.map(k=>d[k])));
+  const padL=6, padR=6, padT=16, padB=54;
+  const groupW = (w-padL-padR)/items.length;
+  const barW = Math.min(20, groupW*0.28);
+  const gap=4;
+  svg.appendChild(svgEl('line',{x1:padL,y1:h-padB,x2:w-padR,y2:h-padB,stroke:'var(--baseline)','stroke-width':1}));
+  items.forEach((d,i)=>{
+    const cx = padL + groupW*i + groupW/2;
+    seriesKeys.forEach((sk,si)=>{
+      const bh = (d[sk]/max)*(h-padT-padB);
+      const x = cx - (barW*seriesKeys.length + gap*(seriesKeys.length-1))/2 + si*(barW+gap);
+      const y = h-padB-bh;
+      svg.appendChild(svgEl('rect',{x:x,y:y,width:barW,height:Math.max(bh,1),rx:3,fill:colors[si]}));
+      if(sk==='actual' && d.actual/d.recibidos < 0.05){
+        svg.appendChild(svgEl('circle',{cx:x+barW/2,cy:y-7,r:3,fill:'var(--status-critical)'}));
+      }
+    });
+    const lbl = svgEl('text',{x:cx,y:h-padB+16,'text-anchor':'middle','font-size':9.3,'font-weight':700,fill:'var(--muted)'});
+    const words = d.k.split(' ');
+    lbl.textContent = words.length>3 ? words.slice(0,2).join(' ')+'…' : d.k;
+    svg.appendChild(lbl);
+  });
+}
+
+/* ---------- Donut / progress ring ---------- */
+function renderDonut(svgId, pct, color, trackColor, thickness){
+  const svg=document.getElementById(svgId);
+  const size = parseFloat(svg.getAttribute('viewBox').split(' ')[2]);
+  const r = size/2 - (thickness||10);
+  const cx=size/2, cy=size/2;
+  const circ = 2*Math.PI*r;
+  svg.innerHTML='';
+  svg.appendChild(svgEl('circle',{cx,cy,r,fill:'none',stroke:trackColor||'var(--surface-3)','stroke-width':thickness||10}));
+  const arc = svgEl('circle',{cx,cy,r,fill:'none',stroke:color,'stroke-width':thickness||10,
+    'stroke-dasharray':circ, 'stroke-dashoffset':circ*(1-pct/100), 'stroke-linecap':'round',
+    transform:'rotate(-90 '+cx+' '+cy+')'});
+  svg.appendChild(arc);
+  const txt = svgEl('text',{x:cx,y:cy+5,'text-anchor':'middle','font-size':17,'font-weight':800,fill:'var(--ink)','font-family':'var(--font-mono)'});
+  txt.textContent = pct+'%';
+  svg.appendChild(txt);
+}
+
+/* two-slice donut (catálogo) */
+function renderTwoSliceDonut(svgId, a, colorA, colorB){
+  const svg=document.getElementById(svgId);
+  const size = parseFloat(svg.getAttribute('viewBox').split(' ')[2]);
+  const r = size/2-11, cx=size/2, cy=size/2, circ=2*Math.PI*r, th=15;
+  svg.innerHTML='';
+  svg.appendChild(svgEl('circle',{cx,cy,r,fill:'none',stroke:colorB,'stroke-width':th}));
+  const gap = 3; // surface gap between the two slices
+  svg.appendChild(svgEl('circle',{cx,cy,r,fill:'none',stroke:colorA,'stroke-width':th,
+    'stroke-dasharray':(circ*a/100 - gap)+' '+circ,'stroke-dashoffset':0,'stroke-linecap':'butt',
+    transform:'rotate(-90 '+cx+' '+cy+')'}));
+}
+
+/* ---------- Stacked bar (percepción) ---------- */
+function renderStackBar(containerId, legendId, items){
+  const cont=document.getElementById(containerId); cont.innerHTML='';
+  items.forEach(it=>{
+    const seg=document.createElement('span');
+    seg.style.width=it.v+'%'; seg.style.background=it.c;
+    cont.appendChild(seg);
+  });
+  const leg=document.getElementById(legendId); leg.innerHTML='';
+  items.forEach(it=>{
+    const d=document.createElement('div'); d.className='item';
+    d.innerHTML=`<span class="sw" style="background:${it.c}"></span>${it.k} · ${it.v}%`;
+    leg.appendChild(d);
+  });
+}
+
+/* ---------- Age grid ---------- */
+function renderAgeGrid(){
+  const cont=document.getElementById('edadGrid'); cont.innerHTML='';
+  const max=Math.max(...DATA.edad.map(d=>d.v));
+  DATA.edad.forEach(d=>{
+    const h = 14 + (d.v/max)*30;
+    const cell=document.createElement('div'); cell.className='agecell';
+    cell.innerHTML = `<div class="ab" style="height:${h}px"><span class="av2">${d.v}%</span></div><span class="al">${d.k}</span>`;
+    cont.appendChild(cell);
+  });
+}
+
+/* ============================================================ RENDER ============================================================ */
+function renderAll(){
+  renderKPIs();
+
+  document.getElementById('coberturaTotalTag').textContent =
+    DATA.cobertura.reduce((s,c)=>s+c.vis,0)+' / '+DATA.cobertura.reduce((s,c)=>s+c.tot,0);
+  const coberturaItems = DATA.cobertura.map(c=>({k:c.ciudad, v:Math.round(c.vis/c.tot*1000)/10}))
+    .sort((a,b)=>b.v-a.v);
+  renderHBars('coberturaChart', coberturaItems, { max:100, suffix:'%', colorFn:it=>tierColor(it.v,85,70) });
+
+  renderColumns('ventasChart', DATA.ventasCategoria, { color:'var(--series-1)' });
+  renderHBars('marcasChart', DATA.marcas, { color:'var(--series-2)' });
+  renderTwoSliceDonut('catalogoDonut', DATA.catalogo.pro, 'var(--series-2)', 'var(--series-1)');
+
+  renderDonut('conoceDonut', DATA.conoceMarca, 'var(--brand)', 'var(--brand-soft)', 11);
+  renderDonut('opinionGauge', DATA.opinion/5*100, 'var(--seq-450)', 'var(--seq-100)', 11);
+  renderStackBar('percepcionStack','percepcionLegend', DATA.percepcion);
+  renderAgeGrid();
+  renderHBars('tipoProductoChart', DATA.tipoProducto, { max:100, suffix:'%', color:'var(--series-3)' });
+  renderHBars('atributosChart', DATA.atributos, { max:100, suffix:'%', color:'var(--series-6)' });
+
+  renderGroupedColumns('premiosChart', DATA.premios, ['recibidos','actual'], ['var(--series-1)','var(--series-2)'], 260);
+  renderHBars('competenciaChart', DATA.competencia, { max:100, suffix:'%', color:'var(--series-4)' });
+
+  const tbody=document.querySelector('#asesoresTable tbody'); tbody.innerHTML='';
+  DATA.asesores.forEach(a=>{
+    const pct = Math.round(a.vis/a.asig*1000)/10;
+    const fotos = a.fotos!==undefined ? a.fotos : 100.0;
+    const tierP = tierName(pct,90,75), tierF = tierName(fotos,98,90);
+    const initials = a.n.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
+    const tr=document.createElement('tr');
+    tr.innerHTML = `
+      <td><div class="advisor"><span class="av">${initials}</span>${a.n}</div></td>
+      <td class="num">${a.asig}</td>
+      <td class="num">${a.vis}</td>
+      <td><span class="pill ${tierP}"><span class="dot"></span>${pct}%</span><span class="mini-bar"><span style="width:${pct}%;background:var(--status-${tierP==='good'?'good':tierP==='warning'?'warning':'critical'})"></span></span></td>
+      <td><span class="pill ${tierF}"><span class="dot"></span>${fotos.toFixed(1)}%</span></td>
+      <td class="num">${fmt(a.ventas)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', renderAll);
+window.addEventListener('resize', ()=>{ clearTimeout(window._rz); window._rz=setTimeout(renderAll, 150); });
+
+document.getElementById('periodChips').addEventListener('click', e=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  document.querySelectorAll('#periodChips button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+});
+</script>
