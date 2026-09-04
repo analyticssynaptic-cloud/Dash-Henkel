@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
 <style>
   :root{
     color-scheme: light;
@@ -157,8 +159,16 @@
   .agecell .av2{font-size:10px;color:#fff;font-weight:800;padding-bottom:3px;}
 
   /* MAPA */
-  #mapaVisitas{width:100%;height:420px;border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--border);}
+  /* isolation:isolate crea un contexto de apilamiento propio para el mapa: los z-index
+     internos de Leaflet (controles, popups, hasta ~700) quedan encerrados aquí adentro y
+     nunca compiten con el header fijo (z-index:40) al hacer scroll - sin esto, el mapa se
+     "comía" la barra superior. */
+  #mapaVisitas{width:100%;height:460px;border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--border);isolation:isolate;position:relative;z-index:0;}
   .leaflet-popup-content-wrapper{border-radius:12px;font-family:var(--font-display);}
+  .marker-pin{position:relative;width:30px;height:30px;}
+  .marker-pin .mp-body{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);position:absolute;left:2px;top:0;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;}
+  .marker-pin .mp-body svg{transform:rotate(45deg);width:12px;height:12px;stroke:#fff;}
+  .cluster-icon{background:var(--brand);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-family:var(--font-mono);border:3px solid #fff;box-shadow:0 3px 10px -2px rgba(225,0,15,.5);}
   .map-legend{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap;}
   .map-popup{min-width:180px;}
   .map-popup img{width:100%;height:90px;object-fit:cover;border-radius:8px;margin-bottom:8px;}
@@ -220,6 +230,11 @@
   .mb-row:last-child{border-bottom:none;}
   .mb-row .mbk{color:var(--muted);font-weight:600;}
   .mb-row .mbv{font-weight:700;text-align:right;}
+  .mu-title{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-top:14px;border-top:1px solid var(--border);}
+  .mu-actions{display:flex;gap:8px;margin-top:10px;}
+  .mu-actions a{flex:1;text-align:center;text-decoration:none;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--ink);font-size:12px;font-weight:700;padding:9px;border-radius:var(--radius-sm);}
+  .mu-actions a:hover{border-color:var(--brand);color:var(--brand);}
+  .mu-empty{font-size:12px;color:var(--muted);padding:14px 0;text-align:center;background:var(--surface-2);border-radius:12px;}
 
   footer.note{margin-top:30px;padding-top:18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);font-weight:600;}
 
@@ -547,10 +562,12 @@
       </button>
     </div>
     <div class="modal-body" id="modalBody"></div>
+    <div id="modalUbicacion" style="padding:0 22px 22px"></div>
   </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script>
 /* ==== CONFIGURA ESTO: misma URL del Web App de Apps Script del proyecto de captura ==== */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxxLHJRU92mw6gh_MR67HsEjFVTUpa3sSbbBHfYDq8_JB3aD9Ncf_OG58qsh15pzENS/exec';
@@ -867,6 +884,14 @@ function renderAsesoresTable(){
 }
 
 /* ===== Mapa ===== */
+function urlStreetView(lat, lng){ return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`; }
+function urlGoogleMaps(lat, lng){ return `https://www.google.com/maps?q=${lat},${lng}`; }
+function iconoPin(color){
+  return L.divIcon({
+    className: '', html: `<div class="marker-pin"><div class="mp-body" style="background:${color}"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg></div></div>`,
+    iconSize:[30,30], iconAnchor:[15,28], popupAnchor:[0,-26]
+  });
+}
 function renderMapa(){
   const puntos = (DATA.visitas||[]).filter(v => v.lat && v.lng);
   document.getElementById('mapaTag').textContent = puntos.length + ' visita' + (puntos.length===1?'':'s') + ' con GPS';
@@ -875,17 +900,25 @@ function renderMapa(){
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap', maxZoom: 18
     }).addTo(mapaLeaflet);
-    mapaCapaMarcadores = L.layerGroup().addTo(mapaLeaflet);
+    mapaCapaMarcadores = L.markerClusterGroup({
+      maxClusterRadius: 44,
+      iconCreateFunction: cluster => L.divIcon({
+        html: `<div class="cluster-icon" style="width:${cluster.getChildCount()>=10?40:34}px;height:${cluster.getChildCount()>=10?40:34}px;">${cluster.getChildCount()}</div>`,
+        className:'', iconSize:null
+      })
+    }).addTo(mapaLeaflet);
   }
   mapaCapaMarcadores.clearLayers();
   if (puntos.length===0) return;
   const bounds = [];
   puntos.forEach(p=>{
     const color = p.ventaRealizada==='Si' ? '#0ca30c' : '#2a78d6';
-    const marker = L.circleMarker([p.lat,p.lng], { radius:7, color:'#fff', weight:2, fillColor:color, fillOpacity:.95 });
+    const marker = L.marker([p.lat,p.lng], { icon: iconoPin(color) });
     const idPopupBtn = 'mp_' + p.registroId.replace(/[^a-zA-Z0-9]/g,'');
-    const fotoHtml = p.fotoIngresoURL ? `<img src="${escHtml(p.fotoIngresoURL)}" alt="Foto de ingreso">` : '';
-    const popupHtml = `<div class="map-popup">${fotoHtml}<b>${escHtml(p.puntoVenta||'PDV')}</b><div class="mp-sub">${escHtml(p.ciudad||'')} · ${escHtml(p.cadena||'')}<br>Asesor: ${escHtml(p.asesor||'—')}<br>${fechaLegible(p.timestamp)} · Venta: ${p.ventaRealizada||'—'}</div><button id="${idPopupBtn}">Ver detalle completo</button></div>`;
+    const fotoHtml = p.fotoIngresoURL ? `<img src="${escHtml(p.fotoIngresoURL)}" alt="Foto de ingreso" referrerpolicy="no-referrer">` : '';
+    const popupHtml = `<div class="map-popup">${fotoHtml}<b>${escHtml(p.puntoVenta||'PDV')}</b><div class="mp-sub">${escHtml(p.ciudad||'')} · ${escHtml(p.cadena||'')}<br>Asesor: ${escHtml(p.asesor||'—')}<br>${fechaLegible(p.timestamp)} · Venta: ${p.ventaRealizada||'—'}</div>
+      <a href="${urlStreetView(p.lat,p.lng)}" target="_blank" rel="noopener" style="display:block;margin-top:8px;text-align:center;font-size:11.5px;font-weight:700;color:var(--brand);text-decoration:none">🚶 Ver Street View</a>
+      <button id="${idPopupBtn}">Ver detalle completo</button></div>`;
     marker.bindPopup(popupHtml);
     marker.on('popupopen', () => {
       const btn = document.getElementById(idPopupBtn);
@@ -894,7 +927,7 @@ function renderMapa(){
     marker.addTo(mapaCapaMarcadores);
     bounds.push([p.lat,p.lng]);
   });
-  if (bounds.length) mapaLeaflet.fitBounds(bounds, { padding:[24,24], maxZoom:12 });
+  if (bounds.length) mapaLeaflet.fitBounds(bounds, { padding:[36,36], maxZoom:13 });
   setTimeout(()=> mapaLeaflet.invalidateSize(), 200);
 }
 
@@ -987,7 +1020,7 @@ function renderVisitasList(){
   items.slice(0,100).forEach(v=>{
     const card = document.createElement('div'); card.className='visita-card';
     const fotoHtml = v.fotoIngresoURL
-      ? `<img class="vc-foto" src="${escHtml(v.fotoIngresoURL)}" alt="">`
+      ? `<img class="vc-foto" src="${escHtml(v.fotoIngresoURL)}" alt="" referrerpolicy="no-referrer">`
       : `<div class="vc-foto sinfoto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
     const chips = [];
     chips.push(v.ventaRealizada==='Si' ? `<span class="vc-chip venta">Venta: ${fmt(v.unidadesVenta)} uds</span>` : `<span class="vc-chip sinventa">Sin venta</span>`);
@@ -1003,8 +1036,8 @@ function abrirDetalleVisita(registroId){
   const v = (DATA.visitas||[]).find(x => x.registroId === registroId);
   if (!v) return;
   const fotosHtml = [
-    v.fotoIngresoURL ? `<img src="${escHtml(v.fotoIngresoURL)}" alt="Foto de ingreso">` : `<div class="sinfoto">Sin foto de ingreso</div>`,
-    v.fotoSalidaURL ? `<img src="${escHtml(v.fotoSalidaURL)}" alt="Foto de salida">` : `<div class="sinfoto">Sin foto de salida</div>`
+    v.fotoIngresoURL ? `<img src="${escHtml(v.fotoIngresoURL)}" alt="Foto de ingreso" referrerpolicy="no-referrer">` : `<div class="sinfoto">Sin foto de ingreso</div>`,
+    v.fotoSalidaURL ? `<img src="${escHtml(v.fotoSalidaURL)}" alt="Foto de salida" referrerpolicy="no-referrer">` : `<div class="sinfoto">Sin foto de salida</div>`
   ];
   document.getElementById('modalFotos').innerHTML = fotosHtml.join('');
   document.getElementById('modalTitulo').textContent = v.asesor || '—';
@@ -1022,6 +1055,23 @@ function abrirDetalleVisita(registroId){
     ['Próxima visita programada', v.proximaVisita || '—']
   ];
   document.getElementById('modalBody').innerHTML = filas.map(([k,val])=>`<div class="mb-row"><span class="mbk">${escHtml(k)}</span><span class="mbv">${escHtml(val)}</span></div>`).join('');
+
+  const ubic = document.getElementById('modalUbicacion');
+  if (v.lat && v.lng) {
+    // El "embed" de Street View sin API key de Google (el truco output=svembed) no es
+    // confiable - en la práctica cae a un mapa mundial genérico en vez del punto real, así
+    // que no se usa. Se prefieren estos dos botones: SIEMPRE abren el sitio real (con el
+    // muñequito ya puesto en las coordenadas exactas), sin necesitar ninguna API key.
+    ubic.innerHTML = `<div class="mu-title">📍 Ubicación</div>
+      <div class="mu-actions" style="margin-top:0">
+        <a href="${urlStreetView(v.lat,v.lng)}" target="_blank" rel="noopener" style="padding:14px 9px;font-size:13px">🚶<br>Abrir Street View</a>
+        <a href="${urlGoogleMaps(v.lat,v.lng)}" target="_blank" rel="noopener" style="padding:14px 9px;font-size:13px">🗺️<br>Ver en Google Maps</a>
+      </div>
+      <div style="font-size:10.5px;color:var(--muted);text-align:center;margin-top:8px">${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}</div>`;
+  } else {
+    ubic.innerHTML = `<div class="mu-title">📍 Ubicación</div><div class="mu-empty">Esta visita no tiene coordenadas GPS registradas.</div>`;
+  }
+
   document.getElementById('modalVisita').classList.add('show');
 }
 function cerrarModal(){ document.getElementById('modalVisita').classList.remove('show'); }
