@@ -111,6 +111,7 @@
   .pill.warning{color:#8a5a0d;background:var(--status-warning-soft);}
   .pill.critical{color:var(--status-critical);background:var(--status-critical-soft);}
   .pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .mod-checklist{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:4px;}
 
   .meter-wrap{display:flex;align-items:center;gap:18px;}
   .meter-figures{display:flex;flex-direction:column;gap:2px;}
@@ -212,6 +213,8 @@
   .visita-card .vc-chips .vc-chip.venta{background:var(--status-good-soft);color:var(--status-good);}
   .visita-card .vc-chips .vc-chip.sinventa{background:var(--surface-3);color:var(--muted);}
   .visita-card .vc-chips .vc-chip.comp{background:var(--status-critical-soft);color:var(--status-critical);}
+  .visita-card .vc-chips .vc-chip.completa{background:var(--status-good-soft);color:var(--status-good);}
+  .visita-card .vc-chips .vc-chip.incompleta{background:var(--status-warning-soft);color:#8a5a0d;}
   .visita-search{margin-bottom:10px;}
 
   /* MODAL DETALLE DE VISITA */
@@ -589,6 +592,16 @@ function tierColor(pct, good, warn){ return pct>=good ? 'var(--status-good)' : p
 function tierName(pct, good, warn){ return pct>=good ? 'good' : pct>=warn ? 'warning' : 'critical'; }
 function escHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fechaLegible(iso){ if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); }
+
+/* Los 6 módulos que la app de captura pide por visita (mismo orden que MODULOS_JSON en
+   Codigo.gs) — se usan para validar de un vistazo si el asesor capturó todo, sin tener
+   que interpretar el string crudo "modulosGuardados". */
+const MODULOS_ESPERADOS = [
+  { id:'ingreso', label:'Ingreso' }, { id:'ventas', label:'Ventas' }, { id:'premios', label:'Premios' },
+  { id:'voz', label:'Voz del consumidor' }, { id:'competencia', label:'Competencia' }, { id:'salida', label:'Salida' }
+];
+function modulosGuardadosSet(v){ return new Set(String(v.modulosGuardados||'').split(',').map(s=>s.trim()).filter(Boolean)); }
+function visitaCompleta(v){ const set = modulosGuardadosSet(v); return MODULOS_ESPERADOS.every(m => set.has(m.id)); }
 
 /* ===== TOOLTIP GENÉRICO ===== */
 const tooltipEl = document.getElementById('tooltip');
@@ -1024,7 +1037,9 @@ function renderVisitasList(){
       ? `<img class="vc-foto" src="${escHtml(v.fotoIngresoURL)}" alt="" referrerpolicy="no-referrer">`
       : `<div class="vc-foto sinfoto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
     const chips = [];
+    chips.push(visitaCompleta(v) ? `<span class="vc-chip completa">Completa</span>` : `<span class="vc-chip incompleta">Incompleta</span>`);
     chips.push(v.ventaRealizada==='Si' ? `<span class="vc-chip venta">Venta: ${fmt(v.unidadesVenta)} uds</span>` : `<span class="vc-chip sinventa">Sin venta</span>`);
+    if (v.premiosEntregados) chips.push(`<span class="vc-chip venta">Premios: ${fmt(v.premiosEntregados)} uds</span>`);
     if (v.competenciaHayActividad==='Si') chips.push(`<span class="vc-chip comp">Competencia</span>`);
     card.innerHTML = `${fotoHtml}<div class="vc-info"><b>${escHtml(v.asesor||'—')}</b><span>${escHtml(v.puntoVenta||'—')} · ${escHtml(v.ciudad||'')}</span><span>${fechaLegible(v.timestamp)}</span><div class="vc-chips">${chips.join('')}</div></div>`;
     card.addEventListener('click', () => abrirDetalleVisita(v.registroId));
@@ -1043,19 +1058,34 @@ function abrirDetalleVisita(registroId){
   document.getElementById('modalFotos').innerHTML = fotosHtml.join('');
   document.getElementById('modalTitulo').textContent = v.asesor || '—';
   document.getElementById('modalSub').textContent = (v.puntoVenta||'—') + ' · ' + (v.ciudad||'') + ' · ' + fechaLegible(v.timestamp);
+
+  const guardadosSet = modulosGuardadosSet(v);
+  const checklistHtml = '<div class="mu-title" style="padding-top:0">Cobertura de la visita — ' + (visitaCompleta(v) ? 'completa' : 'incompleta') + '</div>' +
+    '<div class="mod-checklist">' + MODULOS_ESPERADOS.map(m => {
+      const ok = guardadosSet.has(m.id);
+      return `<span class="pill ${ok ? 'good' : 'critical'}"><span class="dot"></span>${escHtml(m.label)}</span>`;
+    }).join('') + '</div>';
+
+  const productosHtml = (v.productos && v.productos.length)
+    ? v.productos.map(p => `<div class="mb-row"><span class="mbk">${escHtml(p.producto)}</span><span class="mbv">${fmt(p.cantidad)} uds</span></div>`).join('')
+    : '<div class="mb-row"><span class="mbk">Sin productos vendidos</span><span class="mbv">—</span></div>';
+
   const filas = [
     ['Cadena / canal', v.cadena || '—'],
     ['Código de visita', v.registroId || '—'],
     ['Venta realizada', v.ventaRealizada || '—'],
-    ['Productos vendidos', (v.productosVendidos||v.unidadesVenta) ? (fmt(v.productosVendidos)+' referencias · '+fmt(v.unidadesVenta)+' uds') : '—'],
+    ['Premios entregados', fmt(v.premiosEntregados||0) + ' uds'],
     ['Premios recibidos', fmt(v.premiosRecibidos||0) + ' uds'],
     ['Consumidores encuestados', fmt(v.encuestas||0)],
     ['Actividad de competencia', v.competenciaHayActividad || '—'],
-    ['Módulos guardados', v.modulosGuardados || '—'],
     ['Observaciones de salida', v.observacionesGenerales || '—'],
     ['Próxima visita programada', v.proximaVisita || '—']
   ];
-  document.getElementById('modalBody').innerHTML = filas.map(([k,val])=>`<div class="mb-row"><span class="mbk">${escHtml(k)}</span><span class="mbv">${escHtml(val)}</span></div>`).join('');
+  const filasHtml = filas.map(([k,val])=>`<div class="mb-row"><span class="mbk">${escHtml(k)}</span><span class="mbv">${escHtml(val)}</span></div>`).join('');
+
+  document.getElementById('modalBody').innerHTML = checklistHtml +
+    '<div class="mu-title">Qué vendió</div>' + productosHtml +
+    '<div class="mu-title">Detalle de la visita</div>' + filasHtml;
 
   const ubic = document.getElementById('modalUbicacion');
   if (v.lat && v.lng) {
