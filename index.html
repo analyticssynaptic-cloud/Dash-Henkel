@@ -522,7 +522,7 @@
   <div class="grid cols-1">
     <div class="card">
       <div class="card-head">
-        <div><h3>Cumplimiento Golden Rules por asesor</h3><p>Visitas, PDV distintos, evidencia fotográfica y ventas — datos reales</p></div>
+        <div><h3>Cumplimiento Golden Rules por asesor</h3><p>Visitas, PDV distintos, evidencia fotográfica, ventas y premios entregados — datos reales</p></div>
         <button class="btn-export" id="btnExportarAsesores" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV
         </button>
@@ -535,6 +535,7 @@
             <th class="num" data-k="pdvDistintos">PDV distintos <span class="sort-ic">▾</span></th>
             <th data-k="pctFotosCompletas">Fotos completas <span class="sort-ic">▾</span></th>
             <th class="num" data-k="ventasUnidades">Ventas (uds) <span class="sort-ic">▾</span></th>
+            <th class="num" data-k="premiosEntregados">Premios entregados <span class="sort-ic">▾</span></th>
             <th data-k="ultimaVisita">Última visita <span class="sort-ic">▾</span></th>
           </tr></thead>
           <tbody></tbody>
@@ -870,7 +871,7 @@ function renderAsesoresTable(){
     return String(va).localeCompare(String(vb),'es')*asesoresOrden.dir;
   });
   const tbody = document.querySelector('#asesoresTable tbody'); tbody.innerHTML='';
-  if (items.length===0){ tbody.innerHTML='<tr><td colspan="6" class="empty-hint">Sin visitas registradas todavía.</td></tr>'; return; }
+  if (items.length===0){ tbody.innerHTML='<tr><td colspan="7" class="empty-hint">Sin visitas registradas todavía.</td></tr>'; return; }
   items.forEach(a=>{
     const initials = a.nombre.split(' ').map(s=>s[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
     const tierF = tierName(a.pctFotosCompletas,98,90);
@@ -878,7 +879,7 @@ function renderAsesoresTable(){
     tr.innerHTML = `<td><div class="advisor"><span class="av">${initials}</span>${escHtml(a.nombre)}</div></td>
       <td class="num">${fmt(a.visitas)}</td><td class="num">${fmt(a.pdvDistintos)}</td>
       <td><span class="pill ${tierF}"><span class="dot"></span>${a.pctFotosCompletas}%</span><span class="mini-bar"><span style="width:${a.pctFotosCompletas}%;background:var(--status-${tierF})"></span></span></td>
-      <td class="num">${fmt(a.ventasUnidades)}</td><td>${fechaLegible(a.ultimaVisita)}</td>`;
+      <td class="num">${fmt(a.ventasUnidades)}</td><td class="num">${fmt(a.premiosEntregados)}</td><td>${fechaLegible(a.ultimaVisita)}</td>`;
     tbody.appendChild(tr);
   });
 }
@@ -1192,7 +1193,7 @@ document.getElementById('btnExportarProductos').addEventListener('click', ()=>{
   descargarCSV('henkel_ventas_por_producto.csv', DATA.ventasPorProducto, [{key:'producto',label:'Producto'},{key:'categoria',label:'Categoria'},{key:'marca',label:'Marca'},{key:'unidades',label:'Unidades'}]);
 });
 document.getElementById('btnExportarAsesores').addEventListener('click', ()=>{
-  descargarCSV('henkel_cumplimiento_asesores.csv', DATA.asesores, [{key:'nombre',label:'Asesor'},{key:'visitas',label:'Visitas'},{key:'pdvDistintos',label:'PDV distintos'},{key:'pctFotosCompletas',label:'Pct fotos completas'},{key:'ventasUnidades',label:'Ventas uds'},{key:'ultimaVisita',label:'Ultima visita'}]);
+  descargarCSV('henkel_cumplimiento_asesores.csv', DATA.asesores, [{key:'nombre',label:'Asesor'},{key:'visitas',label:'Visitas'},{key:'pdvDistintos',label:'PDV distintos'},{key:'pctFotosCompletas',label:'Pct fotos completas'},{key:'ventasUnidades',label:'Ventas uds'},{key:'premiosEntregados',label:'Premios entregados'},{key:'ultimaVisita',label:'Ultima visita'}]);
 });
 
 cargarBI();
